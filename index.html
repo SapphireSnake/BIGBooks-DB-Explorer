@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigBooks Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="./js/sql-wasm.js"></script>
+    <script>
+        window.addEventListener('load', function () {
+            if (typeof window.initSqlJs === 'function') {
+                console.log("Global: initSqlJs is loaded.");
+            } else {
+                console.error("Global: initSqlJs is NOT defined.");
+            }
+        });
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+
+<body class="bg-slate-900 text-slate-100 min-h-screen p-8" x-data="dbApp()">
+
+    <div class="max-w-6xl mx-auto space-y-8">
+
+        <!-- Header -->
+        <header class="flex justify-between items-center pb-6 border-b border-slate-700">
+            <div>
+                <h1
+                    class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
+                    BigBooks Explorer</h1>
+                <p class="text-slate-400 mt-1">Interactive Database Visualization</p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <!-- Database Controls -->
+                <div class="flex items-center space-x-2 bg-slate-800 rounded-lg p-1 border border-slate-700">
+                    <!-- Dropdown -->
+                    <div class="relative">
+                        <select x-model="selectedDbId" @change="switchDatabase()"
+                            class="bg-transparent text-blue-300 text-xs font-medium px-3 py-1.5 pr-8 focus:outline-none appearance-none cursor-pointer">
+                            <template x-for="db in availableDbs" :key="db.id">
+                                <option :value="db.id" x-text="db.name" class="bg-slate-800"></option>
+                            </template>
+                        </select>
+                        <div
+                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
+                            <svg class="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Add Button -->
+                    <div class="h-4 w-px bg-slate-600 mx-1"></div>
+
+                    <button @click="$refs.dbInput.click()"
+                        class="text-xs text-emerald-400 hover:text-emerald-300 px-2 py-1 flex items-center space-x-1 transition"
+                        title="Upload Database">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
+                            </path>
+                        </svg>
+                        <span>Add</span>
+                    </button>
+                    <input type="file" x-ref="dbInput" @change="handleFileUpload($event)"
+                        accept=".sqlite,.db,.sqlite3,.db3" class="hidden">
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <div class="h-3 w-3 rounded-full"
+                        :class="dbLoaded ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-red-500'">
+                    </div>
+                    <span class="text-sm font-mono" x-text="dbLoaded ? 'System Online' : 'Loading Database...'"></span>
+                    <span x-show="error" class="text-xs text-red-400 ml-2" x-text="error"></span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- Left Panel: Schema & Info -->
+            <div class="space-y-6">
+                <!-- Schema Viewer -->
+                <div class="glass bg-slate-800/50 rounded-xl p-6 border border-slate-700/50">
+                    <h2 class="text-lg font-semibold mb-4 text-blue-300">Database Schema</h2>
+                    <div class="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                        <template x-for="table in tables" :key="table">
+                            <div class="group cursor-pointer" @click="quickSelect(table)">
+                                <div
+                                    class="flex items-center justify-between p-2 rounded hover:bg-slate-700/50 transition">
+                                    <div class="flex items-center space-x-2">
+                                        <svg class="w-4 h-4 text-slate-500 group-hover:text-blue-400" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4">
+                                            </path>
+                                        </svg>
+                                        <span class="font-mono text-sm text-slate-300 group-hover:text-white"
+                                            x-text="table"></span>
+                                    </div>
+                                    <span
+                                        class="text-xs text-slate-600 group-hover:text-blue-400 opacity-0 group-hover:opacity-100 transition">SELECT
+                                        *</span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="glass bg-slate-800/50 rounded-xl p-6 border border-slate-700/50">
+                    <h2 class="text-lg font-semibold mb-4 text-emerald-300">System Stats</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-slate-900/50 p-3 rounded-lg text-center">
+                            <div class="text-2xl font-bold text-white" x-text="tables.length"></div>
+                            <div class="text-xs text-slate-500 uppercase tracking-wider">Tables</div>
+                        </div>
+                        <div class="bg-slate-900/50 p-3 rounded-lg text-center">
+                            <div class="text-2xl font-bold text-white">SQL</div>
+                            <div class="text-xs text-slate-500 uppercase tracking-wider">Engine</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Query Interface -->
+            <div class="lg:col-span-2 space-y-6">
+
+                <!-- Tabs -->
+                <div class="flex space-x-4 border-b border-slate-700 pb-2">
+                    <button @click="currentTab = 'data'" class="text-sm font-medium pb-2 transition"
+                        :class="currentTab === 'data' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-slate-300'">
+                        Data Explorer
+                    </button>
+                    <button @click="currentTab = 'schema'" class="text-sm font-medium pb-2 transition"
+                        :class="currentTab === 'schema' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-slate-300'">
+                        Visual Schema
+                    </button>
+                </div>
+
+                <!-- DATA VIEW -->
+                <div x-show="currentTab === 'data'" class="space-y-6">
+                    <!-- Natural Language Input -->
+                    <div
+                        class="glass bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-xl p-1 border border-blue-500/30 shadow-lg shadow-blue-500/10">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                            </div>
+                            <input type="text" x-model="nlQuery" @keydown.enter="processNLQuery()"
+                                placeholder="Ask BigBooks a question or tell it to write a SQL query."
+                                class="block w-full pl-12 pr-4 py-4 bg-transparent text-white placeholder-slate-500 focus:outline-none text-lg font-light">
+                            <button @click="processNLQuery()"
+                                class="absolute inset-y-2 right-2 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition">
+                                Ask AI
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- SQL Editor -->
+                    <div
+                        class="glass bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden flex flex-col">
+                        <div
+                            class="bg-slate-900/80 px-4 py-2 border-b border-slate-700 flex justify-between items-center">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-xs font-mono text-slate-400">SQL EDITOR</span>
+                                <span x-show="sqlQuery.toUpperCase().includes('LIMIT')"
+                                    class="text-[10px] font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/30">
+                                    LIMIT APPLIED
+                                </span>
+                            </div>
+                            <button @click="runQuery()"
+                                class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded transition">RUN
+                                QUERY (Cmd+Enter)</button>
+                        </div>
+                        <textarea x-model="sqlQuery" @keydown.meta.enter="runQuery()" @keydown.ctrl.enter="runQuery()"
+                            class="w-full h-32 bg-slate-900 text-blue-100 font-mono p-4 focus:outline-none resize-none text-sm"
+                            spellcheck="false"></textarea>
+                    </div>
+
+                    <!-- Results Area -->
+                    <div
+                        class="glass bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden min-h-[300px]">
+                        <div
+                            class="bg-slate-900/80 px-4 py-2 border-b border-slate-700 flex justify-between items-center">
+                            <span class="text-xs font-mono text-slate-400">RESULTS</span>
+                            <span class="text-xs font-mono text-slate-500" x-show="lastExecutionTime"
+                                x-text="`Done in ${lastExecutionTime}ms`"></span>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <template x-if="error">
+                                <div class="p-8 text-center">
+                                    <div class="text-red-400 font-mono mb-2">Error Executing Query</div>
+                                    <div class="text-slate-400 text-sm" x-text="error"></div>
+                                </div>
+                            </template>
+
+                            <template x-if="!error && results.length === 0 && !loading">
+                                <div class="p-8 text-center text-slate-500 italic">
+                                    Ready to query. Try asking a question or writing SQL.
+                                </div>
+                            </template>
+
+                            <template x-if="results.length > 0">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="bg-slate-700/30">
+                                            <template x-for="col in columns" :key="col">
+                                                <th class="p-3 text-xs font-semibold text-slate-300 uppercase tracking-wider border-b border-slate-700"
+                                                    x-text="col"></th>
+                                            </template>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-700/50">
+                                        <template x-for="(row, rIdx) in results" :key="rIdx">
+                                            <tr class="hover:bg-slate-700/20 transition">
+                                                <template x-for="(cell, cIdx) in row" :key="cIdx">
+                                                    <td class="p-3 text-sm text-slate-300 font-mono whitespace-nowrap"
+                                                        x-text="cell"></td>
+                                                </template>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SCHEMA VIEW -->
+                <div x-show="currentTab === 'schema'"
+                    class="glass bg-slate-800/50 rounded-xl border border-slate-700/50 p-6 min-h-[600px] flex items-center justify-center overflow-hidden">
+                    <div x-html="mermaidHtml" class="w-full h-full flex justify-center"></div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./js/app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+    </script>
+</body>
+
+</html>
