@@ -3,3 +3,4 @@
 __pycache__/
 *.pyc
 update_db.sql
+SQLite_DB/

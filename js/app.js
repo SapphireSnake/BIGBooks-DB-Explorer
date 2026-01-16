@@ -26,7 +26,7 @@ const createDbApp = () => ({
     uploadedFiles: {}, // Cache for uploaded file buffers
 
     // UI State
-    currentTab: 'data',
+    currentTab: 'data', // 'data' or 'schema'
     mermaidHtml: '',
 
     async init() {
@@ -69,6 +69,7 @@ const createDbApp = () => ({
         const file = event.target.files[0];
         if (!file) return;
 
+        console.log("App: File uploaded:", file.name);
         this.loading = true;
         this.error = null;
 
@@ -199,5 +200,8 @@ const createDbApp = () => ({
     }
 });
 
+// Register component
 Alpine.data('dbApp', createDbApp);
+
+// Start Alpine
 Alpine.start();

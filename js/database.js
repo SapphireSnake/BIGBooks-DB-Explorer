@@ -6,18 +6,21 @@ export class DatabaseManager {
 
     async init() {
         console.log("DatabaseManager: Starting init sequence...");
+
         try {
+            // 1. Check for global initSqlJs
             if (typeof window.initSqlJs !== 'function') {
-                throw new Error("window.initSqlJs is not defined.");
+                throw new Error("window.initSqlJs is not defined. Script tag failed to load?");
             }
 
+            // 2. Initialize SQL.js
             const config = {
                 locateFile: filename => `./js/sql-wasm.wasm`
             };
 
             this.SQL = await window.initSqlJs(config);
-            console.log("DatabaseManager: SQL.js initialized.");
 
+            // 3. Fetch default database
             const response = await fetch(`./project.sqlite?v=${Date.now()}`);
 
             if (!response.ok) {
@@ -25,15 +28,10 @@ export class DatabaseManager {
             }
 
             const buf = await response.arrayBuffer();
-            console.log(`DatabaseManager: Database fetched (${buf.byteLength} bytes).`);
 
-            try {
-                this.db = new this.SQL.Database(new Uint8Array(buf));
-                console.log("DatabaseManager: Database opened.");
-            } catch (dbErr) {
-                console.error("DatabaseManager: Failed to open SQL database object:", dbErr);
-                throw dbErr;
-            }
+            // 4. Open database
+            this.db = new this.SQL.Database(new Uint8Array(buf));
+            console.log("DatabaseManager: Database opened successfully!");
 
             return true;
 

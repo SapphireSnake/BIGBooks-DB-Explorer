@@ -10,9 +10,9 @@
     <script>
         window.addEventListener('load', function () {
             if (typeof window.initSqlJs === 'function') {
-                console.log("Global: initSqlJs is loaded.");
+                console.log("Global: initSqlJs is loaded and is a function.");
             } else {
-                console.error("Global: initSqlJs is NOT defined.");
+                console.error("Global: initSqlJs is NOT defined. Script load failed?");
             }
         });
     </script>
@@ -83,7 +83,6 @@
                         :class="dbLoaded ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-red-500'">
                     </div>
                     <span class="text-sm font-mono" x-text="dbLoaded ? 'System Online' : 'Loading Database...'"></span>
-                    <span x-show="error" class="text-xs text-red-400 ml-2" x-text="error"></span>
                 </div>
             </div>
         </header>
@@ -165,11 +164,11 @@
                                 </svg>
                             </div>
                             <input type="text" x-model="nlQuery" @keydown.enter="processNLQuery()"
-                                placeholder="Ask BigBooks a question or tell it to write a SQL query."
+                                placeholder="Enter a question or description to generate SQL."
                                 class="block w-full pl-12 pr-4 py-4 bg-transparent text-white placeholder-slate-500 focus:outline-none text-lg font-light">
                             <button @click="processNLQuery()"
                                 class="absolute inset-y-2 right-2 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition">
-                                Ask AI
+                                Ask
                             </button>
                         </div>
                     </div>
