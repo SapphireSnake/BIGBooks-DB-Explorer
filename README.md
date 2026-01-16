@@ -2,7 +2,7 @@
 
 **BigBooks Explorer** is a lightweight, client-side database visualization tool designed to showcase the power of in-browser SQL processing and natural language querying. It allows users to explore SQLite databases, visualize schemas, and run queries using plain English.
 
-[**🎥 Watch the Demo Video**](BigBooks%20Explorer%20Video%20demo.mov)
+[**🎥 Watch the Demo Video**](BigBooks-Explorer-Video-demo.mov)
 
 > *Note: Click the link above to view the demo video.*
 
